@@ -23,7 +23,18 @@ bot.on('message', ctx => {
             text: ctx.message.text,
             lang: 'en'
         }
-    }).then(res => ctx.reply(res.data.text[0]))
+    }).then(res => {
+        const translation = res.data.text[0]
+        ctx.reply(translation)
+
+        if (ctx.session.dnt === true) {
+            return
+        }
+
+        let messages = JSON.parse(ctx.session.messages) || [];
+        messages.push({ text: ctx.message.text, translation: translation });
+        ctx.session.messages = JSON.stringify(messages)
+    })
 })
 
 bot.command('from', ctx => {
@@ -56,6 +67,25 @@ bot.command('to', ctx => {
     ctx.reply('✅ "to" language set to ' + lang)
 })
 
-// bot.hears('/hi/i', ctx => ctx.reply('Hi There')) // intercept a specific message
+bot.command('history', ctx => {
+    try {
+        ctx.reply(JSON.parse(ctx.session.messages).map(message => `${message.text}: ${message.translation}`).join('\n'))
+    } catch (err) {
+        console.error(err)
+    }
+})
 
+bot.command('clear', ctx => {
+    ctx.session.messages = JSON.stringify([])
+    ctx.reply('✅ history cleared')
+})
 
+bot.command('dnt', ctx => {
+    ctx.session.dnt = true
+    ctx.reply('✅ do not track')
+})
+
+bot.command('dt', ctx => {
+    ctx.session.dnt = false
+    ctx.reply('✅ do track')
+})
